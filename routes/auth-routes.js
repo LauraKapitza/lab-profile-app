@@ -7,7 +7,25 @@ const User = require('../models/User.model');
 
 
 //POST - /auth/login - username, password - User logged
+authRoutes.post('/login', (req, res, next) => {
+    const {username, password} = req.body;
 
+    User.findOne({username})
+    .then(user => {
+        if (!user) {
+            return next(new Error('No user with that email'))
+        }
+
+        //compareSync
+        if (bcryptjs.compareSync(password, user.password) !== true) {
+            return next(new Error('Wrong credentials'))
+        } else {
+            req.session.currentUser = user
+            res.json(user)
+        }
+    })
+    .catch(next)
+})
 
 
 //POST - /auth/signup - username, password, campus, course - User created
