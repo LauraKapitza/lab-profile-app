@@ -13,11 +13,13 @@ authRoutes.post('/login', (req, res, next) => {
     User.findOne({username})
     .then(user => {
         if (!user) {
-            return next(new Error('No user with that email'))
+            res.status(400).json({message: 'No user with that username'})
+            return next(new Error('No user with that username'))
         }
 
         //compareSync
         if (bcryptjs.compareSync(password, user.password) !== true) {
+            res.status(400).json({message: 'Wrong credentials'})
             return next(new Error('Wrong credentials'))
         } else {
             req.session.currentUser = user
@@ -44,7 +46,7 @@ authRoutes.post('/signup', (req, res, next) => {
     User.findOne({username})
     .then(foundUser => {
         if (foundUser) {
-            res.status(400).json({message:'Username taken. Choose another one'});
+            res.status(409).json({message:'Username taken. Choose another one'});
             return;
         }
 
@@ -60,7 +62,6 @@ authRoutes.post('/signup', (req, res, next) => {
 
         newUser.save()
         .then(() => {
-            console.log('toto')
             //persist our new user into session
             req.session.currentUser = newUser
 
@@ -77,24 +78,58 @@ authRoutes.post('/signup', (req, res, next) => {
 
 
 //POST - /auth/upload - file - User updated
+authRoutes.post('/upload', (req, res, next) => {
+    const imageUrl = req.body.imageUrl;
+    const userId = req.session.currentUser;
 
+    if (!userId) {
+        res.status(401).json({message: 'You need to be logged-in to create a project'});
+        return;
+    }
 
-
-//POST - /auth/edit - username, campus, course - User updated
-
-
-
-//POST - /auth/logout - OK message
-
-
-//GET - /auth/loggedin - User logged
-
-authRoutes.get('/auth/loggedin', (req, res) => {
-    res.render('users/user-profile', {userInSession: req.session.currentUser})
+    User.findByIdAndUpdate(userId._id, {imageUrl: imageUrl})
+    .then(user => {
+        res.status(200).json({message:'Image was successfully uploaded'})
+    })
+    .catch(err => {
+        res.status(500).json({message:'Error occures while checking username'})
+    })
 })
 
 
+//POST - /auth/edit - username, campus, course - User updated
+authRoutes.post('/edit', (req, res, next) => {
+    const {username, password, campus, course} = req.body;
+    const userId = req.session.currentUser
+
+    if (!userId) {
+        res.status(401).json({message: 'You need to be logged-in to create a project'});
+        return;
+    }
+
+    User.findByIdAndUpdate(userId._id, {username, password, campus, course})
+    .then(user => {
+        res.status(200).json({message:'Image was successfully uploaded'})
+    })
+    .catch(err => {
+        res.status(500).json({message:'Error occures while checking username'})
+    })
+})
 
 
+//POST - /auth/logout - OK message
+authRoutes.post('/logout', (req, res, next) => {
+    req.session.destroy()
+    res.json({message:'You are now logged out.'})
+})
+
+//GET - /auth/loggedin - User logged
+authRoutes.get('/loggedin', (req, res) => {
+    if (req.session.currentUser) {
+        res.status(200).json(req.session.currentUser);
+        return;
+    }
+    res.status(403).json({message:'Unauthorized'})
+})
 
 module.exports = authRoutes;

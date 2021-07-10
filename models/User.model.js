@@ -20,7 +20,7 @@ const userSchema = new Schema(
             type: String,
             enum: ['Web Dev', 'UX/UI', 'Data Analytics']
         },
-        image: String
+        imageUrl: String
     },
     {
         timestamps: true
